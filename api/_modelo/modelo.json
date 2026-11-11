@@ -1,0 +1,9 @@
+{
+ "modelo": "YOLO11n-cls (Ultralytics 8.4.208), exportado a ONNX opset 18",
+ "clases": ["MADUROS", "SOBREMADUROS"],
+ "imgsz": 320,
+ "preproceso": "orientar, ajustar a 320x320 con bordes negros, RGB / 255",
+ "umbral_duda": 0.70,
+ "exactitud_prueba": 0.9449,
+ "nota": "Entrenado en Colab con Roboflow pepino-madurez v1 (2 715 fotos). 9 de los 15 errores de la prueba tuvieron confianza menor de 0,70."
+}
