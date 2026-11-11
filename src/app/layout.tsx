@@ -14,9 +14,9 @@ const cuerpo = Barlow({
 	weight: ['400', '500', '600', '700'],
 });
 
-const TITULO = 'UPN · Inspección de maíz morado';
+const TITULO = 'UPN · Madurez del pepino';
 const DESCRIPCION =
-	'Sistema de visión artificial que detecta defectos visibles en mazorcas de maíz morado y orienta su clasificación de calidad.';
+	'Sistema de visión artificial que clasifica un pepino como maduro o sobremaduro a partir de una foto.';
 
 // Dirección absoluta para las vistas previas (WhatsApp, Facebook, etc.): Vercel la entrega en el entorno.
 const DOMINIO =
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 	),
 	title: TITULO,
 	description: DESCRIPCION,
-	applicationName: 'Inspección de maíz morado',
+	applicationName: 'Madurez del pepino',
 	openGraph: {
 		type: 'website',
 		locale: 'es_PE',
