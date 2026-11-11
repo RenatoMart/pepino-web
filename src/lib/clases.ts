@@ -12,6 +12,12 @@ export type ResultadoAnalisis = {
 	/** Parte amarilla del color vivo de la foto, en porcentaje. */
 	amarillo_pct: number;
 	pepino_pct_imagen: number;
+	/** Caja del pepino en la foto original: [x0, y0, x1, y1] entre 0 y 1. */
+	caja: [number, number, number, number];
+	/** Confianza del detector en esa caja (0 a 1). */
+	confianza_caja: number;
+	/** El detector y el clasificador no dan la misma categoría. */
+	discrepa_detector: boolean;
 };
 
 /** Respuesta cuando en la foto no se reconoce un pepino. */

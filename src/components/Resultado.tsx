@@ -59,11 +59,25 @@ export default function Resultado({
 
 	return (
 		<div className='aparecer grid items-start gap-8 md:grid-cols-2'>
-			<img
-				alt='Foto analizada'
-				className='foto-ficha max-h-[70vh] w-full object-contain'
-				src={src}
-			/>
+			<div className='relative mx-auto w-fit max-w-full'>
+				<img
+					alt='Foto analizada'
+					className='foto-ficha block h-auto max-h-[70vh] w-auto max-w-full'
+					src={src}
+				/>
+				<div
+					aria-label={`Pepino detectado (${pct(datos.confianza_caja)} de confianza del detector)`}
+					className={`pointer-events-none absolute rounded-sm border-[3px] ${
+						maduro ? 'border-pepino' : 'border-(--sobre)'
+					}`}
+					style={{
+						left: `${datos.caja[0] * 100}%`,
+						top: `${datos.caja[1] * 100}%`,
+						width: `${(datos.caja[2] - datos.caja[0]) * 100}%`,
+						height: `${(datos.caja[3] - datos.caja[1]) * 100}%`,
+					}}
+				/>
+			</div>
 
 			<div className='flex flex-col gap-6'>
 				<div role='status'>
@@ -82,8 +96,9 @@ export default function Resultado({
 
 				{datos.dudoso && (
 					<p className='aviso-duda'>
-						El modelo no está seguro (confianza de {pct(datos.confianza)}, menor
-						de {pct(datos.umbral_duda)}). Revisa este pepino a mano.
+						{datos.discrepa_detector
+							? 'El detector del fruto y el clasificador no coinciden. Revisa este pepino a mano.'
+							: `El modelo no está seguro (confianza de ${pct(datos.confianza)}, menor de ${pct(datos.umbral_duda)}). Revisa este pepino a mano.`}
 					</p>
 				)}
 

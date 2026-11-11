@@ -1,9 +1,22 @@
 {
  "modelo": "YOLO11n-cls (Ultralytics 8.4.208), exportado a ONNX opset 18",
- "clases": ["MADUROS", "SOBREMADUROS"],
+ "clases": [
+  "MADUROS",
+  "SOBREMADUROS"
+ ],
  "imgsz": 320,
  "preproceso": "orientar, ajustar a 320x320 con bordes negros, RGB / 255",
- "umbral_duda": 0.70,
+ "umbral_duda": 0.7,
  "exactitud_prueba": 0.9449,
- "nota": "Entrenado en Colab con Roboflow pepino-madurez v1 (2 715 fotos). 9 de los 15 errores de la prueba tuvieron confianza menor de 0,70."
+ "nota": "Entrenado en Colab con Roboflow pepino-madurez v1 (2 715 fotos). 9 de los 15 errores de la prueba tuvieron confianza menor de 0,70.",
+ "deteccion": {
+  "modelo": "YOLO11n detección (Ultralytics 8.4.210), ONNX opset 18",
+  "imgsz": 640,
+  "clases": [
+   "MADUROS",
+   "SOBREMADUROS"
+  ],
+  "conf_minima": 0.25,
+  "nota": "Entrenado en Colab con Roboflow pepino-madurez-cajas v1 (940 fotos, cajas automáticas por color). Prueba: mAP50 0,959."
+ }
 }

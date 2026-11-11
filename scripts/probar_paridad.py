@@ -24,4 +24,4 @@ for s in ("train", "val", "test"):
     for f in (ENT / "datos/dataset" / s).rglob("*.jpg"):
         fr.append(N.medidas_color(cv2.cvtColor(cv2.imread(str(f)), cv2.COLOR_BGR2RGB))["fraccion"])
 fr = np.array(fr)
-print(f"{len(fr)} fotos | fracción verde-amarilla: p0.5 {np.percentile(fr, .5):.3f} | mediana {np.median(fr):.3f} | rechazadas: {int(sum(not N.hay_pepino({'fraccion': a}) for a in fr))}")
+print(f"{len(fr)} fotos | fracción verde-amarilla: p0.5 {np.percentile(fr, .5):.3f} | mediana {np.median(fr):.3f}")

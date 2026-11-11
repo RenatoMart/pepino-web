@@ -1,4 +1,6 @@
-"""Núcleo del análisis: clasifica la foto de un pepino en maduro o sobremaduro con el modelo ONNX.
+"""Núcleo del análisis de la foto de un pepino con dos modelos ONNX.
+
+Un detector YOLO11n (640 px) decide si hay un pepino y dónde está; un clasificador YOLO11n-cls (320 px) da la categoría.
 
 Solo usa numpy y OpenCV (el modelo se ejecuta con cv2.dnn), así el paquete queda liviano para Vercel.
 El preprocesamiento repite el del entrenamiento (Roboflow v1): ajustar a 320x320 con bordes negros.
@@ -13,10 +15,14 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 RUTA = os.path.join(AQUI, "_modelo")
 CONFIG = json.load(open(os.path.join(RUTA, "modelo.json"), encoding="utf-8"))
 LADO = int(CONFIG["imgsz"])
+LADO_DET = int(CONFIG["deteccion"]["imgsz"])
+CONF_DET = float(CONFIG["deteccion"]["conf_minima"])
+IOU_NMS = 0.7
 NOMBRES = {"MADUROS": "Maduro", "SOBREMADUROS": "Sobremaduro"}
 MENSAJE_SIN_PEPINO = "No se reconoce un pepino en la foto."
 
 _red = None
+_det = None
 
 
 def red():
@@ -24,6 +30,13 @@ def red():
     if _red is None:
         _red = cv2.dnn.readNetFromONNX(os.path.join(RUTA, "best.onnx"))
     return _red
+
+
+def detector():
+    global _det
+    if _det is None:
+        _det = cv2.dnn.readNetFromONNX(os.path.join(RUTA, "deteccion.onnx"))
+    return _det
 
 
 def ajustar(rgb, lado=LADO):
@@ -38,6 +51,28 @@ def ajustar(rgb, lado=LADO):
     y, x = (lado - nh) // 2, (lado - nw) // 2
     lienzo[y:y + nh, x:x + nw] = im
     return lienzo
+
+
+def detectar(rgb):
+    """Devuelve la caja de mayor confianza como (x0, y0, x1, y1, confianza, clase) normalizada a la foto original, o None."""
+    h, w = rgb.shape[:2]
+    im = ajustar(rgb, LADO_DET)
+    e = min(LADO_DET / h, LADO_DET / w); ox, oy = (LADO_DET - w * e) / 2, (LADO_DET - h * e) / 2
+    x = np.ascontiguousarray(im.transpose(2, 0, 1)[None].astype(np.float32) / 255.0)
+    n = detector(); n.setInput(x)
+    s = n.forward()[0].T                       # (8400, 4 + clases): cx, cy, ancho, alto y una puntuación por clase
+    puntaje = s[:, 4:].max(axis=1); ok = puntaje >= CONF_DET
+    if not ok.any():
+        return None
+    s, puntaje = s[ok], puntaje[ok]
+    cajas = [[float(a - c / 2), float(b - d / 2), float(c), float(d)] for a, b, c, d in s[:, :4]]
+    i = cv2.dnn.NMSBoxes(cajas, puntaje.astype(float).tolist(), CONF_DET, IOU_NMS)
+    if len(i) == 0:
+        return None
+    k = int(np.asarray(i).reshape(-1)[0]); cx, cy, bw, bh = (float(v) for v in s[k, :4])
+    x0, y0 = max(0.0, (cx - bw / 2 - ox) / (w * e)), max(0.0, (cy - bh / 2 - oy) / (h * e))
+    x1, y1 = min(1.0, (cx + bw / 2 - ox) / (w * e)), min(1.0, (cy + bh / 2 - oy) / (h * e))
+    return x0, y0, x1, y1, float(puntaje[k]), int(s[k, 4:].argmax())
 
 
 def probabilidades(im320):
@@ -68,30 +103,28 @@ def medidas_color(im320):
     return {"fraccion": float(mayor / foto), "amarillo": float(na / max(1, na + nv))}
 
 
-def hay_pepino(m):
-    """Comprobación mínima: el clasificador siempre responde algo, así que se rechazan las fotos sin nada verde o amarillo.
-
-    Es una comprobación débil (un objeto verde cualquiera la pasa); el modelo no tiene una clase "sin pepino".
-    """
-    return m["fraccion"] >= CONFIG.get("fraccion_minima", 0.01)
-
-
 def analizar(rgb):
     """rgb: imagen uint8 (alto, ancho, 3). Devuelve el resultado listo para enviar a la interfaz."""
+    d = detectar(rgb)
+    if d is None:
+        return {"pepino_detectado": False, "mensaje": MENSAJE_SIN_PEPINO}
+    x0, y0, x1, y1, conf_caja, k_det = d
     im = ajustar(rgb)
     m = medidas_color(im)
-    if not hay_pepino(m):
-        return {"pepino_detectado": False, "mensaje": MENSAJE_SIN_PEPINO}
     p = probabilidades(im)
     k = int(p.argmax())
     clase = CONFIG["clases"][k]
+    discrepa = CONFIG["deteccion"]["clases"][k_det] != clase
     return {
         "pepino_detectado": True,
         "categoria": NOMBRES[clase],
         "confianza": round(float(p[k]), 3),
         "p_sobremaduro": round(float(p[CONFIG["clases"].index("SOBREMADUROS")]), 3),
-        "dudoso": bool(p[k] < CONFIG["umbral_duda"]),
+        "dudoso": bool(p[k] < CONFIG["umbral_duda"] or discrepa),
         "umbral_duda": float(CONFIG["umbral_duda"]),
         "amarillo_pct": round(m["amarillo"] * 100, 1),
-        "pepino_pct_imagen": round(m["fraccion"] * 100, 1),
+        "caja": [round(x0, 4), round(y0, 4), round(x1, 4), round(y1, 4)],
+        "confianza_caja": round(conf_caja, 3),
+        "pepino_pct_imagen": round(100 * (x1 - x0) * (y1 - y0), 1),
+        "discrepa_detector": bool(discrepa),
     }
