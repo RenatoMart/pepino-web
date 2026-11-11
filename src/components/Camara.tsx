@@ -1,5 +1,5 @@
 'use client';
-/* eslint-disable no-unused-vars, @typescript-eslint/no-unused-vars, react-hooks/set-state-in-effect, max-len */
+/* eslint-disable no-unused-vars, react-hooks/set-state-in-effect */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -121,7 +121,7 @@ export default function Camara({ onFoto, onCerrar, onError }: Props) {
 					</p>
 				)}
 				<p className='bg-tinta/70 absolute inset-x-0 top-0 p-3 text-center text-sm font-medium text-white'>
-					Apunta a la mazorca para que ocupe buena parte de la imagen
+					Apunta al pepino para que ocupe buena parte de la imagen
 				</p>
 			</div>
 			<div className='bg-tinta flex items-center justify-between gap-4 px-6 py-5'>
@@ -134,7 +134,7 @@ export default function Camara({ onFoto, onCerrar, onError }: Props) {
 				</button>
 				<button
 					aria-label='Tomar foto'
-					className='bg-amarillo border-claro size-18 rounded-full border-4 transition-transform duration-150 active:scale-90 disabled:opacity-40'
+					className='border-claro bg-amarillo size-18 rounded-full border-4 transition-transform duration-150 active:scale-90 disabled:opacity-40'
 					disabled={!lista}
 					onClick={capturar}
 					type='button'

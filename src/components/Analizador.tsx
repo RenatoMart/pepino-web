@@ -6,9 +6,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RespuestaAnalisis as TipoResultado } from '../lib/clases';
 import { prepararImagen } from '../lib/imagen';
 import Camara from './Camara';
-import FlechaUPN from './FlechaUPN';
+import { PepinoDibujo } from './InicioPepino';
+import Mancha, { crearMancha } from './Mancha';
 import Resultado from './Resultado';
-import SinMazorca from './SinMazorca';
+import SinPepino from './SinPepino';
 
 type Estado =
 	| { fase: 'inicio' }
@@ -16,9 +17,12 @@ type Estado =
 	| { fase: 'listo'; vista: string; datos: TipoResultado }
 	| { fase: 'error'; mensaje: string; vista?: string };
 
+const M_BANDEJA = crearMancha(205, Math.PI * 0.3, 2);
+const M_BANDEJA_2 = crearMancha(318, Math.PI * 1.2, 0);
+
 const TEXTO = {
 	preparando: 'Preparando la foto…',
-	analizando: 'Analizando la mazorca… puede tardar unos segundos.',
+	analizando: 'Mirando el pepino…',
 } as const;
 
 export default function Analizador() {
@@ -151,80 +155,76 @@ export default function Analizador() {
 					onFoto={fotoDeCamara}
 				/>
 			)}
-			<div className='grid gap-8 sm:gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]'>
-				<section aria-labelledby='t-foto' className='flex flex-col gap-5'>
-					<h2 className='flex items-center gap-3 text-3xl' id='t-foto'>
-						<span className='bg-tinta text-amarillo grid size-10 place-items-center text-2xl'>
-							1
-						</span>
-						Elige una foto
-					</h2>
-					<input
-						accept='image/*'
-						className='sr-only'
-						id='archivo'
-						onChange={e => elegir(e.target.files)}
-						ref={galeria}
-						type='file'
-					/>
-					<input
-						accept='image/*'
-						capture='environment'
-						className='sr-only'
-						id='camara'
-						onChange={e => elegir(e.target.files)}
-						ref={camara}
-						type='file'
-					/>
-					<div
-						className={`tarjeta flex min-h-64 flex-col items-center justify-center gap-5 p-6 text-center transition-colors duration-200 sm:min-h-72 ${
-							arrastrando ? 'bg-amarillo' : 'bg-superficie'
-						}`}
-						onDragLeave={() => setArrastrando(false)}
-						onDragOver={e => {
-							e.preventDefault();
-							setArrastrando(true);
-						}}
-						onDrop={e => {
-							e.preventDefault();
-							setArrastrando(false);
-							if (!ocupado) elegir(e.dataTransfer.files);
-						}}
-					>
-						<div className='border-linea flex w-full flex-1 flex-col items-center justify-center gap-4 border-2 border-dashed px-4 py-6'>
-							<FlechaUPN
-								className='size-16'
-								color={arrastrando ? '#0F0F0F' : '#0F0F0F'}
-							/>
-							<p className='text-lg font-semibold'>
-								<span className='hidden [@media(pointer:fine)]:inline'>
-									Arrastra una foto aquí
-								</span>
-								<span className='[@media(pointer:fine)]:hidden'>
-									Elige una foto de la mazorca
-								</span>
-							</p>
-							<p className='text-suave -mt-3 text-sm'>
-								<span className='hidden [@media(pointer:fine)]:inline'>
-									o elige cómo subirla
-								</span>
-								<span className='[@media(pointer:fine)]:hidden'>
-									desde tu galería o con la cámara
-								</span>
-							</p>
-						</div>
+			<input
+				accept='image/*'
+				className='sr-only'
+				id='archivo'
+				onChange={e => elegir(e.target.files)}
+				ref={galeria}
+				type='file'
+			/>
+			<input
+				accept='image/*'
+				capture='environment'
+				className='sr-only'
+				id='camara'
+				onChange={e => elegir(e.target.files)}
+				ref={camara}
+				type='file'
+			/>
+
+			{estado.fase === 'inicio' ? (
+				<section
+					aria-labelledby='t-foto'
+					className={`bandeja aparecer ${arrastrando ? 'bandeja-activa' : ''}`}
+					onDragLeave={() => setArrastrando(false)}
+					onDragOver={e => {
+						e.preventDefault();
+						setArrastrando(true);
+					}}
+					onDrop={e => {
+						e.preventDefault();
+						setArrastrando(false);
+						elegir(e.dataTransfer.files);
+					}}
+				>
+					<div aria-hidden='true' className='bandeja-fondo'>
+						<Mancha
+							className='absolute -top-20 -left-20 w-72 sm:w-80'
+							forma={M_BANDEJA}
+						/>
+						<Mancha
+							className='absolute -right-24 -bottom-28 w-80 sm:w-96'
+							forma={M_BANDEJA_2}
+						/>
+					</div>
+					<div className='bandeja-zona'>
+						<PepinoDibujo
+							className='pepino-flota -mt-28 w-72 drop-shadow-[0_22px_16px_rgba(0,0,0,0.45)] sm:-mt-40 sm:w-[30rem]'
+							conDefs={false}
+						/>
+						<h2 className='text-4xl text-balance sm:text-6xl' id='t-foto'>
+							<span className='hidden [@media(pointer:fine)]:inline'>
+								Suelta aquí la foto de un{' '}
+								<span className='text-amarillo'>pepino</span>
+							</span>
+							<span className='[@media(pointer:fine)]:hidden'>
+								Muéstranos un <span className='text-amarillo'>pepino</span>
+							</span>
+						</h2>
+						<p className='text-lg text-white/80'>
+							Súbela desde tu galería o tómala ahora con la cámara.
+						</p>
 						<div className='flex w-full flex-col justify-center gap-3 sm:w-auto sm:flex-row sm:gap-4'>
 							<button
-								className='btn btn-negro'
-								disabled={ocupado}
+								className='pildora pildora-amarilla'
 								onClick={() => galeria.current?.click()}
 								type='button'
 							>
 								Subir foto
 							</button>
 							<button
-								className='btn btn-claro'
-								disabled={ocupado}
+								className='pildora pildora-linea'
 								onClick={abrirCamara}
 								type='button'
 							>
@@ -232,84 +232,65 @@ export default function Analizador() {
 							</button>
 						</div>
 					</div>
-					<ul className='text-suave border-amarillo flex flex-col gap-1 border-l-4 pl-4 text-sm'>
-						<li>Una sola mazorca por foto, bien iluminada.</li>
-						<li>
-							Acércate hasta que la mazorca ocupe buena parte de la imagen.
+					<ul className='relative mt-6 flex flex-wrap justify-center gap-2 text-sm'>
+						<li className='ficha-consejo'>Un solo pepino por foto</li>
+						<li className='ficha-consejo'>Con luz de día</li>
+						<li className='ficha-consejo'>
+							Que ocupe buena parte de la imagen
 						</li>
-						<li>Sin otras mazorcas ni objetos grandes alrededor.</li>
+						<li className='ficha-consejo'>Sin otros objetos alrededor</li>
 					</ul>
-					{estado.fase === 'listo' && (
-						<button
-							className='btn btn-claro w-fit'
-							onClick={reiniciar}
-							type='button'
-						>
-							Analizar otra foto
-						</button>
-					)}
 				</section>
-
+			) : (
 				<section
 					aria-labelledby='t-res'
-					className='min-w-0 scroll-mt-4'
+					className='ficha scroll-mt-4'
 					ref={seccionResultado}
 				>
-					<h2 className='flex items-center gap-3 text-3xl' id='t-res'>
-						<span className='bg-tinta text-amarillo grid size-10 place-items-center text-2xl'>
-							2
-						</span>
+					<h2 className='sr-only' id='t-res'>
 						Resultado
 					</h2>
-					<div aria-live='polite' className='mt-5'>
-						{estado.fase === 'inicio' && (
-							<p className='border-linea text-suave border-2 border-dashed p-8 text-center'>
-								Aquí verás la foto con las zonas marcadas, el porcentaje de la
-								mazorca afectado y si pasa o se descarta.
-							</p>
-						)}
+					<div aria-live='polite'>
 						{ocupado && (
-							<div className='flex flex-col gap-4'>
-								<div className='tarjeta bg-amarillo flex items-center gap-4 p-4'>
-									<FlechaUPN carga className='size-12 shrink-0' />
-									<p className='font-semibold'>{TEXTO[estado.fase]}</p>
-								</div>
+							<div className='flex flex-col items-center gap-5 py-4 text-center'>
+								<PepinoDibujo className='pepino-carga w-44' conDefs={false} />
+								<p className='font-display text-4xl'>{TEXTO[estado.fase]}</p>
 								{estado.vista && (
 									<img
 										alt='Foto que se está analizando'
-										className='border-linea max-h-[60vh] w-full border-2 bg-white object-contain opacity-80'
+										className='foto-ficha max-h-[50vh] w-auto max-w-full object-contain opacity-80'
 										src={estado.vista}
 									/>
 								)}
 							</div>
 						)}
 						{estado.fase === 'error' && (
-							<div className='flex flex-col gap-4' role='alert'>
-								<p className='border-linea border-2 bg-(--no-fondo) p-4 font-medium text-(--no)'>
-									{estado.mensaje}
-								</p>
-								<button
-									className='btn btn-claro w-fit'
-									onClick={reiniciar}
-									type='button'
-								>
-									Intentar de nuevo
-								</button>
-							</div>
+							<p className='aviso-error' role='alert'>
+								{estado.mensaje}
+							</p>
 						)}
 						{estado.fase === 'listo' &&
-							(estado.datos.mazorca_detectada === false ? (
-								<SinMazorca
-									mensaje={estado.datos.mensaje}
-									onOtraFoto={reiniciar}
-									src={estado.vista}
-								/>
+							(estado.datos.pepino_detectado === false ? (
+								<SinPepino mensaje={estado.datos.mensaje} src={estado.vista} />
 							) : (
 								<Resultado datos={estado.datos} src={estado.vista} />
 							))}
 					</div>
+					{!ocupado && (
+						<div className='mt-8 flex justify-center border-t-2 border-dashed border-(--pepino-claro) pt-6'>
+							<button
+								className='pildora pildora-verde'
+								onClick={reiniciar}
+								type='button'
+							>
+								{estado.fase === 'error'
+									? 'Intentar de nuevo'
+									: 'Analizar otra foto'}
+							</button>
+						</div>
+					)}
 				</section>
-			</div>
+			)}
 		</>
 	);
 }

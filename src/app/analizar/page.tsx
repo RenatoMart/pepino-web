@@ -1,51 +1,72 @@
+/* eslint-disable max-len */
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Analizador from '../../components/Analizador';
-import Logo from '../../components/Logo';
+import { PepinoDibujo } from '../../components/InicioPepino';
+import LogoMarca from '../../components/LogoMarca';
+import Mancha, { crearMancha } from '../../components/Mancha';
 
 export const metadata: Metadata = {
-	title: 'Analizar una mazorca · UPN',
+	title: 'Analizar un pepino · UPN',
 };
+
+// Manchas de la cabecera y del fondo: las mismas de la portada, quietas.
+const M_IZQ = crearMancha(11, Math.PI * 0.75, 2);
+const M_DER = crearMancha(48, -Math.PI * 0.2, 1);
+const M_CHICA = crearMancha(77, Math.PI * 0.4, 0);
 
 export default function Analizar() {
 	return (
-		<div className='min-h-dvh'>
-			<header className='bg-tinta border-amarillo border-b-4'>
-				<div className='mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-3 sm:px-10'>
+		<div className='relative min-h-dvh overflow-x-clip'>
+			<header className='fondo-upn relative overflow-hidden'>
+				<Mancha
+					className='pointer-events-none absolute -top-28 right-[24%] hidden w-64 sm:block'
+					forma={M_IZQ}
+				/>
+				<Mancha
+					className='pointer-events-none absolute -right-10 -bottom-24 w-64 sm:-right-6 sm:w-96'
+					forma={M_DER}
+				/>
+				<Mancha
+					className='pointer-events-none absolute -bottom-8 left-[38%] hidden w-24 sm:block'
+					forma={M_CHICA}
+				/>
+
+				<div className='relative mx-auto flex w-full max-w-6xl items-center justify-between px-6 pt-4 sm:px-10'>
 					<Link aria-label='Volver al inicio' href='/'>
-						<Logo />
+						<LogoMarca
+							className='h-14 w-auto sm:h-16'
+							tinta='#0F0F0F'
+							variante='completa'
+						/>
 					</Link>
-					<p className='font-display text-amarillo hidden text-xl tracking-wider sm:block'>
-						Inspección de maíz morado
-					</p>
-					<Link
-						className='text-amarillo text-sm font-semibold underline-offset-4 hover:underline'
-						href='/'
-					>
+					<Link className='enlace-inicio' href='/'>
 						Inicio
 					</Link>
 				</div>
+
+				<div className='relative mx-auto grid w-full max-w-6xl items-center gap-2 px-6 pt-6 pb-8 sm:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] sm:px-10 sm:pt-8 sm:pb-10'>
+					<div className='aparecer' style={{ animationDelay: '60ms' }}>
+						<h1 className='text-6xl text-balance sm:text-8xl'>
+							¿Maduro o{' '}
+							<span className='bg-tinta text-amarillo box-decoration-clone px-3'>
+								sobremaduro
+							</span>
+							?
+						</h1>
+						<p className='mt-4 max-w-md text-lg font-medium'>
+							Sube la foto de un pepino y el modelo te dice en qué punto está.
+						</p>
+					</div>
+					<PepinoDibujo className='aparecer mx-auto w-[min(78vw,26rem)] drop-shadow-[0_18px_14px_rgba(0,0,0,0.28)] sm:w-full' />
+				</div>
 			</header>
 
-			<main className='mx-auto w-full max-w-6xl px-6 py-10 sm:px-10'>
-				<h1
-					className='aparecer mb-8 text-5xl text-balance sm:mb-10 sm:text-7xl'
-					style={{ animationDelay: '60ms' }}
-				>
-					<span className='bg-amarillo box-decoration-clone px-3 py-1'>
-						Analiza una mazorca
-					</span>
-				</h1>
-				<Analizador />
+			<main className='zona-trabajo'>
+				<div className='mx-auto w-full max-w-5xl px-4 pt-20 pb-16 sm:px-8 sm:pt-28 sm:pb-20'>
+					<Analizador />
+				</div>
 			</main>
-
-			<footer className='border-linea mx-auto mt-6 w-full max-w-6xl border-t-2 px-6 py-6 text-sm sm:px-10'>
-				<p className='text-suave'>
-					Proyecto de investigación de Ingeniería Industrial, UPN. Resultados
-					preliminares: úsalo como apoyo a la inspección, no como única fuente
-					de decisión. Las fotos se analizan y no se guardan.
-				</p>
-			</footer>
 		</div>
 	);
 }

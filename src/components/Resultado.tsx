@@ -2,33 +2,47 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { CLASES, VEREDICTO, type ResultadoAnalisis } from '../lib/clases';
+import { VEREDICTO, type ResultadoAnalisis } from '../lib/clases';
 
-const TONO = {
-	ok: 'bg-(--ok-fondo) text-(--ok)',
-	medio: 'bg-(--medio-fondo) text-(--medio)',
-	no: 'bg-(--no-fondo) text-(--no)',
-} as const;
+const pct = (v: number) => `${Math.round(v * 100)} %`;
 
-function Icono({ tono }: { tono: 'ok' | 'medio' | 'no' }) {
-	const d =
-		tono === 'no'
-			? 'M6 6l12 12M18 6L6 18'
-			: tono === 'ok'
-				? 'M5 13l4 4L19 7'
-				: 'M12 7v6m0 4h.01';
+/** Medidor de media luna: la aguja va de «maduro» (izquierda) a «sobremaduro» (derecha). */
+function Medidor({ sobre }: { sobre: number }) {
+	const ang = Math.PI * (1 - sobre);
+	const x = 100 + 66 * Math.cos(ang);
+	const y = 100 - 66 * Math.sin(ang);
 	return (
 		<svg
-			aria-hidden='true'
-			className='size-9 shrink-0'
-			fill='none'
-			stroke='currentColor'
-			strokeLinecap='round'
-			strokeLinejoin='round'
-			strokeWidth='2.4'
-			viewBox='0 0 24 24'
+			aria-label={`Probabilidad de sobremaduro: ${pct(sobre)}`}
+			className='w-full max-w-xs'
+			role='img'
+			viewBox='0 0 200 118'
 		>
-			<path d={d} />
+			<defs>
+				<linearGradient id='medidor-color' x1='0' x2='1' y1='0' y2='0'>
+					<stop offset='0' stopColor='#2f8f1c' />
+					<stop offset='0.55' stopColor='#b9d436' />
+					<stop offset='1' stopColor='#fbc105' />
+				</linearGradient>
+			</defs>
+			<path
+				d='M16 100 A84 84 0 0 1 184 100'
+				fill='none'
+				stroke='url(#medidor-color)'
+				strokeLinecap='round'
+				strokeWidth='20'
+			/>
+			<line
+				stroke='#0f0f0f'
+				strokeLinecap='round'
+				strokeWidth='5'
+				x1='100'
+				x2={x}
+				y1='100'
+				y2={y}
+			/>
+			<circle cx='100' cy='100' fill='#0f0f0f' r='9' />
+			<circle cx='100' cy='100' fill='#fbc105' r='3.5' />
 		</svg>
 	);
 }
@@ -41,169 +55,80 @@ export default function Resultado({
 	datos: ResultadoAnalisis;
 }) {
 	const v = VEREDICTO[datos.categoria];
-	const zonas = datos.zonas;
-	const clases = Object.entries(datos.porcentaje_por_clase)
-		.filter(([, p]) => p > 0)
-		.sort((a, b) => b[1] - a[1]);
+	const maduro = datos.categoria === 'Maduro';
 
 	return (
-		<div className='aparecer flex flex-col gap-8'>
-			<div
-				className={`tarjeta flex items-center gap-4 p-4 sm:gap-5 sm:p-5 ${TONO[v.tono]}`}
-				role='status'
-			>
-				<span className='bg-tinta grid size-14 shrink-0 place-items-center text-white'>
-					<Icono tono={v.tono} />
-				</span>
-				<div>
-					<p className='font-display text-4xl leading-none tracking-wide sm:text-5xl'>
+		<div className='aparecer grid items-start gap-8 md:grid-cols-2'>
+			<img
+				alt='Foto analizada'
+				className='foto-ficha max-h-[70vh] w-full object-contain'
+				src={src}
+			/>
+
+			<div className='flex flex-col gap-6'>
+				<div role='status'>
+					<p className='text-suave text-sm font-semibold tracking-widest uppercase'>
+						Este pepino está
+					</p>
+					<p
+						className={`font-display text-7xl leading-none sm:text-8xl ${
+							maduro ? 'text-pepino' : 'text-(--sobre)'
+						}`}
+					>
 						{v.titulo}
 					</p>
-					<p className='mt-1 text-sm font-medium'>{v.detalle}</p>
+					<p className='mt-2 text-lg font-medium'>{v.detalle}</p>
 				</div>
-			</div>
 
-			<figure className='tarjeta relative overflow-hidden'>
-				<img
-					alt='Foto analizada con las zonas detectadas marcadas'
-					className='block h-auto max-h-[70vh] w-full object-contain'
-					src={src}
-				/>
-				<svg
-					aria-hidden='true'
-					className='pointer-events-none absolute inset-0 size-full'
-					preserveAspectRatio='none'
-					viewBox='0 0 1 1'
-				>
-					{zonas.map((z, i) => (
-						<rect
-							fill='none'
-							height={z.alto}
-							key={i}
-							opacity={Math.max(0.45, Math.min(1, z.confianza * 2))}
-							stroke={CLASES[z.clase]?.color ?? '#fff'}
-							strokeWidth='2.5'
-							vectorEffect='non-scaling-stroke'
-							width={z.ancho}
-							x={z.x}
-							y={z.y}
-						/>
-					))}
-				</svg>
-			</figure>
-
-			<section aria-labelledby='t-por-que'>
-				<h3 className='border-amarillo border-b-4 pb-1 text-3xl' id='t-por-que'>
-					Por qué
-				</h3>
-				<p className='mt-3 text-lg'>
-					Defectos en{' '}
-					<strong className='bg-amarillo px-1.5'>
-						{datos.area_defectos_pct} %
-					</strong>{' '}
-					de la mazorca.
-				</p>
-				<p className='text-suave text-sm'>
-					La mazorca ocupa {datos.mazorca_pct_imagen} % de la foto.
-				</p>
-				{datos.motivos.length > 0 && (
-					<ul className='mt-3 list-disc pl-5'>
-						{datos.motivos.map(m => (
-							<li key={m}>{m}</li>
-						))}
-					</ul>
+				{datos.dudoso && (
+					<p className='aviso-duda'>
+						El modelo no está seguro (confianza de {pct(datos.confianza)}, menor
+						de {pct(datos.umbral_duda)}). Revisa este pepino a mano.
+					</p>
 				)}
-				{datos.mazorca_pct_imagen < 4 && (
-					<p className='border-linea mt-4 border-2 bg-(--medio-fondo) p-3 text-sm font-medium text-(--medio)'>
-						La mazorca ocupa muy poco de la foto; acércate para un resultado más
+
+				<div className='panel-suave flex flex-col items-center gap-1'>
+					<Medidor sobre={datos.p_sobremaduro} />
+					<div className='flex w-full max-w-xs justify-between text-sm font-semibold'>
+						<span>Maduro</span>
+						<span>Sobremaduro</span>
+					</div>
+					<p className='mt-2 text-center'>
+						El modelo está{' '}
+						<strong className='font-display text-3xl tabular-nums'>
+							{pct(datos.confianza)}
+						</strong>{' '}
+						seguro.
+					</p>
+				</div>
+
+				<dl className='grid grid-cols-2 gap-3'>
+					<div className='panel-suave'>
+						<dt className='text-suave text-sm'>Amarillo en el fruto</dt>
+						<dd className='font-display text-4xl tabular-nums'>
+							{datos.amarillo_pct} %
+						</dd>
+					</div>
+					<div className='panel-suave'>
+						<dt className='text-suave text-sm'>El pepino ocupa</dt>
+						<dd className='font-display text-4xl tabular-nums'>
+							{datos.pepino_pct_imagen} %
+						</dd>
+					</div>
+				</dl>
+				{datos.pepino_pct_imagen < 4 && (
+					<p className='aviso-duda'>
+						El pepino ocupa muy poco de la foto; acércate para un resultado más
 						fiable.
 					</p>
 				)}
-			</section>
 
-			{clases.length > 0 && (
-				<section aria-labelledby='t-clases'>
-					<h3
-						className='border-amarillo border-b-4 pb-1 text-3xl'
-						id='t-clases'
-					>
-						Qué se encontró
-					</h3>
-					<ul className='mt-4 flex flex-col gap-5'>
-						{clases.map(([clase, pct]) => {
-							const c = CLASES[clase];
-							return (
-								<li key={clase}>
-									<div className='flex items-baseline justify-between gap-3'>
-										<span className='flex items-center gap-2 font-semibold'>
-											<span
-												aria-hidden='true'
-												className='border-linea inline-block size-4 border-2'
-												style={{ background: c?.color }}
-											/>
-											{c?.nombre ?? clase}
-										</span>
-										<span className='font-display text-2xl tabular-nums'>
-											{pct} %
-										</span>
-									</div>
-									<div className='bg-suave-amarillo border-linea mt-1 h-3 border-2'>
-										<div
-											className='bg-tinta h-full'
-											style={{ width: `${Math.min(100, pct)}%` }}
-										/>
-									</div>
-									<p className='text-suave mt-1 text-xs'>{c?.significado}</p>
-								</li>
-							);
-						})}
-					</ul>
-				</section>
-			)}
-
-			{zonas.length > 0 && (
-				<section aria-labelledby='t-zonas'>
-					<h3 className='border-amarillo border-b-4 pb-1 text-3xl' id='t-zonas'>
-						Zonas marcadas ({zonas.length})
-					</h3>
-					<div className='border-linea mt-3 max-h-64 overflow-auto border-2 bg-white'>
-						<table className='w-full text-left text-sm'>
-							<thead className='bg-tinta sticky top-0 text-white'>
-								<tr>
-									<th className='p-2 font-semibold' scope='col'>
-										Zona
-									</th>
-									<th className='p-2 text-right font-semibold' scope='col'>
-										Confianza
-									</th>
-								</tr>
-							</thead>
-							<tbody>
-								{zonas.slice(0, 40).map((z, i) => (
-									<tr className='border-borde border-t' key={i}>
-										<td className='p-2'>
-											<span
-												aria-hidden='true'
-												className='border-linea mr-2 inline-block size-3 border align-middle'
-												style={{ background: CLASES[z.clase]?.color }}
-											/>
-											{CLASES[z.clase]?.nombre ?? z.clase}
-										</td>
-										<td className='p-2 text-right tabular-nums'>
-											{Math.round(z.confianza * 100)} %
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
-				</section>
-			)}
-
-			<p className='border-borde text-suave border-t pt-4 text-xs'>
-				Apoyo a la inspección: es un resultado automático y preliminar. La
-				decisión final es de la persona.
-			</p>
+				<p className='text-suave text-xs'>
+					Apoyo a la selección: es un resultado automático y preliminar. En la
+					prueba el modelo acertó 94,5 % de 272 fotos. La decisión final es de
+					la persona.
+				</p>
+			</div>
 		</div>
 	);
 }
